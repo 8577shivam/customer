@@ -1,607 +1,682 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Garage Service Request</title>
-    <link
-      href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap"
-      rel="stylesheet"
-    />
-    <style>
-      *,
-      *::before,
-      *::after {
-        box-sizing: border-box;
-        margin: 0;
-        padding: 0;
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Garage Service Request</title>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&display=swap"
+    rel="stylesheet" />
+
+  <!-- ✅ EARLY ROUTING: runs before any HTML is painted.
+       Hides the correct card immediately so there's zero flash. -->
+  <script>
+    (function () {
+      const p = new URLSearchParams(window.location.search);
+      window.__customerId = p.get("customer");
+      window.__garageId = p.get("garageid") || p.get("garageId") || p.get("garage_id");
+      const isInvoice = !!window.__customerId;
+      document.write(
+        '<style>' +
+        (isInvoice
+          ? '#formCard{display:none!important}'
+          : '#invoiceCard{display:none!important}') +
+        '</style>'
+      );
+    })();
+  </script>
+
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    :root {
+      --bg: #0e0e0e;
+      --surface: #161616;
+      --border: #2a2a2a;
+      --accent: #e8ff00;
+      --accent-dim: rgba(232, 255, 0, 0.08);
+      --text: #f0f0f0;
+      --muted: #666;
+      --error: #ff4d4d;
+      --radius: 6px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 2rem 1rem;
+    }
+
+    .card {
+      position: relative;
+      z-index: 1;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      width: 100%;
+      max-width: 520px;
+      overflow: hidden;
+      box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
+      animation: slideUp 0.5s ease both;
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(24px);
       }
 
-      :root {
-        --bg: #0e0e0e;
-        --surface: #161616;
-        --border: #2a2a2a;
-        --accent: #e8ff00;
-        --accent-dim: rgba(232, 255, 0, 0.08);
-        --text: #f0f0f0;
-        --muted: #666;
-        --error: #ff4d4d;
-        --radius: 6px;
-      }
-
-      body {
-        background: var(--bg);
-        color: var(--text);
-        font-family: "DM Sans", sans-serif;
-        min-height: 100vh;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 2rem 1rem;
-      }
-
-      body::before {
-        content: "";
-        position: fixed;
-        inset: 0;
-        background-image:
-          linear-gradient(var(--border) 1px, transparent 1px),
-          linear-gradient(90deg, var(--border) 1px, transparent 1px);
-        background-size: 40px 40px;
-        opacity: 0.4;
-        pointer-events: none;
-        z-index: 0;
-      }
-
-      .card {
-        position: relative;
-        z-index: 1;
-        background: var(--surface);
-        border: 1px solid var(--border);
-        border-radius: 12px;
-        width: 100%;
-        max-width: 520px;
-        overflow: hidden;
-        box-shadow: 0 0 60px rgba(0, 0, 0, 0.6);
-        animation: slideUp 0.5s ease both;
-      }
-
-      @keyframes slideUp {
-        from {
-          opacity: 0;
-          transform: translateY(24px);
-        }
-        to {
-          opacity: 1;
-          transform: translateY(0);
-        }
-      }
-
-      .card-header {
-        background: var(--accent);
-        padding: 1.6rem 2rem;
-        position: relative;
-      }
-
-      .card-header .label {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 0.85rem;
-        letter-spacing: 0.18em;
-        color: #000;
-        opacity: 0.55;
-        margin-bottom: 0.2rem;
-      }
-
-      .card-header h1 {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 2.4rem;
-        letter-spacing: 0.04em;
-        color: #000;
-        line-height: 1;
-      }
-
-      .garage-badge {
-        position: absolute;
-        right: 1.5rem;
-        top: 50%;
-        transform: translateY(-50%);
-        background: rgba(0, 0, 0, 0.12);
-        border-radius: 4px;
-        padding: 0.3rem 0.7rem;
-        font-size: 0.8rem;
-        font-weight: 600;
-        letter-spacing: 0.06em;
-        color: #000;
-        font-family: "DM Sans", sans-serif;
-        max-width: 140px;
-        text-align: right;
-      }
-
-      .garage-badge .badge-label {
-        opacity: 0.55;
-        display: block;
-        font-size: 0.6rem;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        margin-bottom: 2px;
-      }
-
-      .garage-badge #garageNameDisplay {
-        display: block;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-
-      .garage-badge.loading #garageNameDisplay {
-        display: inline-block;
-        width: 80px;
-        height: 10px;
-        background: rgba(0, 0, 0, 0.18);
-        border-radius: 3px;
-        animation: shimmer 1.2s ease infinite;
-        vertical-align: middle;
-      }
-
-      @keyframes shimmer {
-        0%,
-        100% {
-          opacity: 0.35;
-        }
-        50% {
-          opacity: 0.8;
-        }
-      }
-
-      .garage-error-bar {
-        display: none;
-        background: rgba(255, 77, 77, 0.07);
-        border-bottom: 1px solid rgba(255, 77, 77, 0.25);
-        padding: 0.55rem 2rem;
-        font-size: 0.76rem;
-        color: var(--error);
-        text-align: center;
-      }
-      .garage-error-bar.show {
-        display: block;
-      }
-
-      .card-body {
-        padding: 2rem;
-      }
-
-      .field {
-        margin-bottom: 1.25rem;
-        animation: fadeIn 0.4s ease both;
-      }
-
-      .field:nth-child(1) {
-        animation-delay: 0.05s;
-      }
-      .field:nth-child(2) {
-        animation-delay: 0.1s;
-      }
-      .field:nth-child(3) {
-        animation-delay: 0.15s;
-      }
-      .field:nth-child(4) {
-        animation-delay: 0.2s;
-      }
-      .field:nth-child(5) {
-        animation-delay: 0.25s;
-      }
-
-      @keyframes fadeIn {
-        from {
-          opacity: 0;
-          transform: translateX(-8px);
-        }
-        to {
-          opacity: 1;
-          transform: translateX(0);
-        }
-      }
-
-      label {
-        display: block;
-        font-size: 0.72rem;
-        font-weight: 600;
-        letter-spacing: 0.12em;
-        text-transform: uppercase;
-        color: var(--muted);
-        margin-bottom: 0.45rem;
-      }
-
-      label .req {
-        color: var(--accent);
-        margin-left: 2px;
-      }
-
-      input,
-      textarea {
-        width: 100%;
-        background: var(--bg);
-        border: 1px solid var(--border);
-        border-radius: var(--radius);
-        color: var(--text);
-        font-family: "DM Sans", sans-serif;
-        font-size: 0.95rem;
-        padding: 0.7rem 0.9rem;
-        outline: none;
-        transition:
-          border-color 0.2s,
-          box-shadow 0.2s;
-      }
-
-      input:focus,
-      textarea:focus {
-        border-color: var(--accent);
-        box-shadow: 0 0 0 3px var(--accent-dim);
-      }
-
-      input.invalid,
-      textarea.invalid {
-        border-color: var(--error);
-        box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.08);
-      }
-
-      textarea {
-        resize: vertical;
-        min-height: 90px;
-      }
-
-      .error-msg {
-        font-size: 0.72rem;
-        color: var(--error);
-        margin-top: 0.35rem;
-        display: none;
-      }
-
-      .error-msg.show {
-        display: block;
-      }
-
-      .submit-btn {
-        width: 100%;
-        background: var(--accent);
-        color: #000;
-        border: none;
-        border-radius: var(--radius);
-        padding: 0.85rem 1rem;
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 1.2rem;
-        letter-spacing: 0.12em;
-        cursor: pointer;
-        margin-top: 0.5rem;
-        transition:
-          opacity 0.2s,
-          transform 0.15s;
-      }
-
-      .submit-btn:hover {
-        opacity: 0.9;
-        transform: translateY(-1px);
-      }
-      .submit-btn:active {
+      to {
+        opacity: 1;
         transform: translateY(0);
       }
-      .submit-btn:disabled {
-        opacity: 0.5;
-        cursor: not-allowed;
-        transform: none;
+    }
+
+    .card-header {
+      background: var(--accent);
+      padding: 1.6rem 2rem;
+      position: relative;
+    }
+
+    .card-header .label {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 0.85rem;
+      letter-spacing: 0.18em;
+      color: #000;
+      opacity: 0.55;
+      margin-bottom: 0.2rem;
+    }
+
+    .card-header h1 {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 2.4rem;
+      letter-spacing: 0.04em;
+      color: #000;
+      line-height: 1;
+    }
+
+    .garage-badge {
+      position: absolute;
+      right: 1.5rem;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(0, 0, 0, 0.12);
+      border-radius: 4px;
+      padding: 0.3rem 0.7rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: #000;
+      font-family: "DM Sans", sans-serif;
+      max-width: 140px;
+      text-align: right;
+    }
+
+    .garage-badge .badge-label {
+      opacity: 0.55;
+      display: block;
+      font-size: 0.6rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+
+    .garage-badge #garageNameDisplay {
+      display: block;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .garage-badge.loading #garageNameDisplay {
+      display: inline-block;
+      width: 80px;
+      height: 10px;
+      background: rgba(0, 0, 0, 0.18);
+      border-radius: 3px;
+      animation: shimmer 1.2s ease infinite;
+      vertical-align: middle;
+    }
+
+    @keyframes shimmer {
+
+      0%,
+      100% {
+        opacity: 0.35;
       }
 
-      .success-overlay {
-        display: none;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        padding: 3rem 2rem;
-        text-align: center;
+      50% {
+        opacity: 0.8;
+      }
+    }
+
+    .garage-error-bar {
+      display: none;
+      background: rgba(255, 77, 77, 0.07);
+      border-bottom: 1px solid rgba(255, 77, 77, 0.25);
+      padding: 0.55rem 2rem;
+      font-size: 0.76rem;
+      color: var(--error);
+      text-align: center;
+    }
+
+    .garage-error-bar.show {
+      display: block;
+    }
+
+    .card-body {
+      padding: 2rem;
+    }
+
+    .field {
+      margin-bottom: 1.25rem;
+      animation: fadeIn 0.4s ease both;
+    }
+
+    .field:nth-child(1) {
+      animation-delay: 0.05s;
+    }
+
+    .field:nth-child(2) {
+      animation-delay: 0.1s;
+    }
+
+    .field:nth-child(3) {
+      animation-delay: 0.15s;
+    }
+
+    .field:nth-child(4) {
+      animation-delay: 0.2s;
+    }
+
+    .field:nth-child(5) {
+      animation-delay: 0.25s;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: translateX(-8px);
       }
 
-      .success-overlay.show {
-        display: flex;
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    label {
+      display: block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+    }
+
+    label .req {
+      color: var(--accent);
+      margin-left: 2px;
+    }
+
+    input,
+    textarea {
+      width: 100%;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.95rem;
+      padding: 0.7rem 0.9rem;
+      outline: none;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    input:focus,
+    textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-dim);
+    }
+
+    input.invalid,
+    textarea.invalid {
+      border-color: var(--error);
+      box-shadow: 0 0 0 3px rgba(255, 77, 77, 0.08);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 90px;
+    }
+
+    .error-msg {
+      font-size: 0.72rem;
+      color: var(--error);
+      margin-top: 0.35rem;
+      display: none;
+    }
+
+    .error-msg.show {
+      display: block;
+    }
+
+    .submit-btn {
+      width: 100%;
+      background: var(--accent);
+      color: #000;
+      border: none;
+      border-radius: var(--radius);
+      padding: 0.85rem 1rem;
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.2rem;
+      letter-spacing: 0.12em;
+      cursor: pointer;
+      margin-top: 0.5rem;
+      transition: opacity 0.2s, transform 0.15s;
+    }
+
+    .submit-btn:hover {
+      opacity: 0.9;
+      transform: translateY(-1px);
+    }
+
+    .submit-btn:active {
+      transform: translateY(0);
+    }
+
+    .submit-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    .success-overlay {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 3rem 2rem;
+      text-align: center;
+    }
+
+    .success-overlay.show {
+      display: flex;
+    }
+
+    .success-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.8rem;
+      margin-bottom: 1.2rem;
+      animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes popIn {
+      from {
+        transform: scale(0);
+        opacity: 0;
       }
 
-      .success-icon {
-        width: 64px;
-        height: 64px;
-        border-radius: 50%;
-        background: var(--accent);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.8rem;
-        margin-bottom: 1.2rem;
-        animation: popIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+      to {
+        transform: scale(1);
+        opacity: 1;
       }
+    }
 
-      @keyframes popIn {
-        from {
-          transform: scale(0);
-          opacity: 0;
-        }
-        to {
-          transform: scale(1);
-          opacity: 1;
-        }
-      }
+    .success-overlay h2 {
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 1.8rem;
+      letter-spacing: 0.06em;
+      color: var(--text);
+      margin-bottom: 0.5rem;
+    }
 
-      .success-overlay h2 {
-        font-family: "Bebas Neue", sans-serif;
-        font-size: 1.8rem;
-        letter-spacing: 0.06em;
-        color: var(--text);
-        margin-bottom: 0.5rem;
-      }
+    .success-overlay p {
+      color: var(--muted);
+      font-size: 0.9rem;
+      line-height: 1.5;
+    }
 
-      .success-overlay p {
-        color: var(--muted);
-        font-size: 0.9rem;
-        line-height: 1.5;
-      }
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 1.5rem 0 1.25rem;
+    }
 
-      .divider {
-        height: 1px;
-        background: var(--border);
-        margin: 1.5rem 0 1.25rem;
-      }
-    </style>
-  </head>
-  <body>
-    <div class="card">
-      <div class="card-header">
-        <div class="label">Garage Portal</div>
-        <h1>Service Request</h1>
-        <div class="garage-badge loading" id="garageBadge">
-          <span class="badge-label">Garage</span>
-          <span id="garageNameDisplay"></span>
-        </div>
-      </div>
+    /* ── Invoice card ──────────────────────────────────────────────────────── */
+    #invoiceCard {
+      /* display is controlled entirely by the early <head> script + JS.
+         We set flex here as the base so when JS sets display it works. */
+      flex-direction: column;
+      padding: 0;
+      max-height: 90vh;
+    }
 
-      <div class="garage-error-bar" id="garageErrorBar">
-        ⚠ Could not load garage details.
-      </div>
+    .invoice-actions {
+      padding: 1rem 2rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      gap: 0.75rem;
+      flex-shrink: 0;
+    }
 
-      <!-- Form -->
-      <div class="card-body" id="formSection">
-        <form id="serviceForm" novalidate>
-          <div class="field">
-            <label>Vehicle Number <span class="req">*</span></label>
-            <input
-              type="text"
-              id="vehicle_number"
-              placeholder="e.g. MH12AB1234"
-              autocomplete="off"
-            />
-            <div class="error-msg" id="err_vehicle_number">
-              Vehicle number is required.
-            </div>
-          </div>
+    .invoice-actions .submit-btn {
+      margin-top: 0;
+      flex: 1;
+    }
 
-          <div class="field">
-            <label>Customer Name <span class="req">*</span></label>
-            <input type="text" id="customer_name" placeholder="Full name" />
-            <div class="error-msg" id="err_customer_name">
-              Customer name is required.
-            </div>
-          </div>
+    .invoice-frame-wrap {
+      flex: 1;
+      min-height: 400px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      background: #fff;
+      margin: 1rem 2rem;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
 
-          <div class="field">
-            <label>Vehicle Model <span class="req">*</span></label>
-            <input
-              type="text"
-              id="vehicle_model"
-              placeholder="e.g. Honda City 2022"
-            />
-            <div class="error-msg" id="err_vehicle_model">
-              Vehicle model is required.
-            </div>
-          </div>
+    .invoice-frame-wrap iframe {
+      flex: 1;
+      width: 100%;
+      min-height: 400px;
+      border: none;
+    }
 
-          <div class="field">
-            <label>Mobile Number <span class="req">*</span></label>
-            <input
-              type="tel"
-              id="mobile_number"
-              placeholder="10-digit mobile number"
-              maxlength="15"
-            />
-            <div class="error-msg" id="err_mobile_number">
-              Enter a valid mobile number.
-            </div>
-          </div>
+    .invoice-loading,
+    .invoice-error {
+      padding: 3rem 2rem;
+      text-align: center;
+      color: var(--muted);
+    }
 
-          <div class="divider"></div>
+    .invoice-error {
+      color: var(--error);
+    }
+  </style>
+</head>
 
-          <div class="field">
-            <label>Issue Description <span class="req">*</span></label>
-            <textarea
-              id="issue"
-              placeholder="Describe the problem with the vehicle…"
-            ></textarea>
-            <div class="error-msg" id="err_issue">
-              Please describe the issue.
-            </div>
-          </div>
+<body>
 
-          <button type="submit" class="submit-btn" id="submitBtn">
-            Submit Request
-          </button>
-        </form>
-      </div>
-
-      <!-- Success screen -->
-      <div class="success-overlay" id="successOverlay">
-        <div class="success-icon">✓</div>
-        <h2>Request Submitted!</h2>
-        <p>
-          Your service request has been received.<br />The garage team will get
-          in touch with you shortly.
-        </p>
+  <!-- ═══ SERVICE REQUEST FORM (shown when NO ?customer= in URL) ═══ -->
+  <div class="card" id="formCard">
+    <div class="card-header">
+      <div class="label">Garage Portal</div>
+      <h1>Service Request</h1>
+      <div class="garage-badge loading" id="garageBadge">
+        <span class="badge-label">Garage</span>
+        <span id="garageNameDisplay"></span>
       </div>
     </div>
 
-    <script>
-      const BASE_URL = "https://fluorometric-luxurious-tosha.ngrok-free.dev";
+    <div class="garage-error-bar" id="garageErrorBar">
+      ⚠ Could not load garage details.
+    </div>
 
-      // ngrok requires this header to skip the browser warning interstitial page
-      const NGROK_HEADERS = {
-        "Content-Type": "application/json",
-        "ngrok-skip-browser-warning": "true",
-      };
+    <div class="card-body" id="formSection">
+      <form id="serviceForm" novalidate>
+        <div class="field">
+          <label>Vehicle Number <span class="req">*</span></label>
+          <input type="text" id="vehicle_number" placeholder="e.g. MH12AB1234" autocomplete="off" />
+          <div class="error-msg" id="err_vehicle_number">Vehicle number is required.</div>
+        </div>
 
-      // Read garageId from URL (?garageid=... or ?garageId=... or ?garage_id=...)
-      const urlParams = new URLSearchParams(window.location.search);
-      const garageId =
-        urlParams.get("garageid") ||
-        urlParams.get("garageId") ||
-        urlParams.get("garage_id");
+        <div class="field">
+          <label>Customer Name <span class="req">*</span></label>
+          <input type="text" id="customer_name" placeholder="Full name" />
+          <div class="error-msg" id="err_customer_name">Customer name is required.</div>
+        </div>
 
-      // Fetch garage name on page load
-      async function loadGarageName() {
-        const badge = document.getElementById("garageBadge");
-        const display = document.getElementById("garageNameDisplay");
-        const errorBar = document.getElementById("garageErrorBar");
+        <div class="field">
+          <label>Vehicle Model <span class="req">*</span></label>
+          <input type="text" id="vehicle_model" placeholder="e.g. Honda City 2022" />
+          <div class="error-msg" id="err_vehicle_model">Vehicle model is required.</div>
+        </div>
 
-        if (!garageId) {
-          badge.classList.remove("loading");
-          display.textContent = "Unknown";
-          errorBar.textContent = "⚠ No garage ID found in URL.";
-          errorBar.classList.add("show");
-          return;
-        }
+        <div class="field">
+          <label>Mobile Number <span class="req">*</span></label>
+          <input type="tel" id="mobile_number" placeholder="10-digit mobile number" maxlength="15" />
+          <div class="error-msg" id="err_mobile_number">Enter a valid mobile number.</div>
+        </div>
+
+        <div class="divider"></div>
+
+        <div class="field">
+          <label>Issue Description <span class="req">*</span></label>
+          <textarea id="issue" placeholder="Describe the problem with the vehicle…"></textarea>
+          <div class="error-msg" id="err_issue">Please describe the issue.</div>
+        </div>
+
+        <button type="submit" class="submit-btn" id="submitBtn">Submit Request</button>
+      </form>
+    </div>
+
+    <div class="success-overlay" id="successOverlay">
+      <div class="success-icon">✓</div>
+      <h2>Request Submitted!</h2>
+      <p>Your service request has been received.<br />The garage team will get in touch with you shortly.</p>
+    </div>
+  </div>
+
+  <!-- ═══ INVOICE VIEW (shown when ?customer= is present in URL) ═══ -->
+  <div class="card" id="invoiceCard">
+    <div class="card-header">
+      <div class="label">Garage Portal</div>
+      <h1>Invoice</h1>
+    </div>
+    <div class="invoice-loading" id="invoiceLoading">Loading invoice…</div>
+    <div class="invoice-error" id="invoiceError" style="display:none;"></div>
+    <div class="invoice-frame-wrap" id="invoiceFrameWrap" style="display:none;">
+      <iframe id="invoiceFrame" title="Invoice"></iframe>
+    </div>
+    <div class="invoice-actions" id="invoiceActions" style="display:none;">
+      <button type="button" class="submit-btn" id="invoiceDownloadBtn">⬇ Download Invoice as PDF</button>
+    </div>
+  </div>
+
+  <script>
+    const BASE_URL = "http://localhost:5000";
+    const NGROK_HEADERS = {
+      "Content-Type": "application/json",
+      "ngrok-skip-browser-warning": "true",
+    };
+
+    // Already parsed by the early <head> script — no double parsing needed
+    const customerId = window.__customerId;
+    const garageId = window.__garageId;
+
+    // ── ROUTE ────────────────────────────────────────────────────────────────
+    // The <head> script already hid the wrong card via injected <style>.
+    // Here we just ensure the visible card has the right display value.
+    if (customerId) {
+      runInvoiceMode();
+    } else if (garageId) {
+      loadGarageName();
+    } else {
+      document.getElementById("formCard").style.display = "none";
+      document.getElementById("invoiceCard").style.display = "none";
+    }
+
+    // ── INVOICE MODE ─────────────────────────────────────────────────────────
+    async function runInvoiceMode() {
+      const invoiceLoading = document.getElementById("invoiceLoading");
+      const invoiceError = document.getElementById("invoiceError");
+      const invoiceFrameWrap = document.getElementById("invoiceFrameWrap");
+      const invoiceFrame = document.getElementById("invoiceFrame");
+      const invoiceActions = document.getElementById("invoiceActions");
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/garages/${customerId}/downloadInvoice`, {
+          method: "GET",
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const html = await res.text();
+
+        invoiceLoading.style.display = "none";
+        invoiceFrameWrap.style.display = "flex";
+        invoiceActions.style.display = "flex";
+
+        invoiceFrame.srcdoc = html;
+
+        // ── PDF download via iframe print ─────────────────────────────────
+        document.getElementById("invoiceDownloadBtn").onclick = function () {
+          function doPrint() {
+            try {
+              const frameDoc = invoiceFrame.contentDocument || invoiceFrame.contentWindow.document;
+              // Inject clean print styles once
+              if (!frameDoc.getElementById("__printStyle")) {
+                const style = frameDoc.createElement("style");
+                style.id = "__printStyle";
+                style.textContent = `@media print { body { margin: 0 !important; } @page { margin: 1cm; } }`;
+                frameDoc.head.appendChild(style);
+              }
+              invoiceFrame.contentWindow.focus();
+              invoiceFrame.contentWindow.print();
+            } catch (err) {
+              console.error("Print failed:", err);
+              alert("Could not open print dialog. Please try again.");
+            }
+          }
+
+          // srcdoc loads asynchronously — wait for it if needed
+          if (
+            invoiceFrame.contentDocument &&
+            invoiceFrame.contentDocument.readyState === "complete"
+          ) {
+            doPrint();
+          } else {
+            invoiceFrame.addEventListener("load", doPrint, { once: true });
+          }
+        };
+
+      } catch (err) {
+        console.error("Invoice fetch failed:", err);
+        invoiceLoading.style.display = "none";
+        invoiceError.textContent = "Could not load invoice. " + (err.message || "");
+        invoiceError.style.display = "block";
+      }
+    }
+
+    // ── GARAGE NAME (form mode only) ──────────────────────────────────────────
+    async function loadGarageName() {
+      const badge = document.getElementById("garageBadge");
+      const display = document.getElementById("garageNameDisplay");
+      const errorBar = document.getElementById("garageErrorBar");
+
+      if (!garageId) {
+        badge.classList.remove("loading");
+        display.textContent = "Unknown";
+        errorBar.textContent = "⚠ No garage ID found in URL.";
+        errorBar.classList.add("show");
+        return;
+      }
+
+      try {
+        const res = await fetch(`${BASE_URL}/api/garages/${garageId}`, {
+          method: "GET",
+          headers: NGROK_HEADERS,
+        });
+        if (!res.ok) throw new Error("HTTP " + res.status);
+
+        const data = await res.json();
+        const name = data.name || data.garage_name || data.garageName || data.title || `Garage #${garageId}`;
+        badge.classList.remove("loading");
+        display.textContent = name;
+      } catch (err) {
+        console.error("Could not fetch garage:", err);
+        badge.classList.remove("loading");
+        display.textContent = `#${garageId}`;
+        errorBar.classList.add("show");
+      }
+    }
+
+    // ── FORM VALIDATION ───────────────────────────────────────────────────────
+    function isEmpty(val) { return !val || !val.trim(); }
+    function isValidMobile(val) { return /^[0-9+\-\s]{7,15}$/.test(val.trim()); }
+
+    function setError(fieldId, show) {
+      document.getElementById(fieldId).classList.toggle("invalid", show);
+      document.getElementById("err_" + fieldId).classList.toggle("show", show);
+    }
+
+    ["vehicle_number", "customer_name", "vehicle_model", "mobile_number", "issue"].forEach((id) => {
+      const el = document.getElementById(id);
+      if (el) el.addEventListener("input", () => setError(id, false));
+    });
+
+    const serviceForm = document.getElementById("serviceForm");
+    if (serviceForm) {
+      serviceForm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+
+        const fields = {
+          vehicle_number: document.getElementById("vehicle_number").value,
+          customer_name: document.getElementById("customer_name").value,
+          vehicle_model: document.getElementById("vehicle_model").value,
+          mobile_number: document.getElementById("mobile_number").value,
+          issue: document.getElementById("issue").value,
+        };
+
+        let valid = true;
+        if (isEmpty(fields.vehicle_number)) { setError("vehicle_number", true); valid = false; }
+        if (isEmpty(fields.customer_name)) { setError("customer_name", true); valid = false; }
+        if (isEmpty(fields.vehicle_model)) { setError("vehicle_model", true); valid = false; }
+        if (isEmpty(fields.mobile_number) || !isValidMobile(fields.mobile_number)) { setError("mobile_number", true); valid = false; }
+        if (isEmpty(fields.issue)) { setError("issue", true); valid = false; }
+        if (!valid) return;
+
+        const payload = {
+          garage_id: garageId,
+          vehicle_number: fields.vehicle_number.trim(),
+          customer_name: fields.customer_name.trim(),
+          vehicle_model: fields.vehicle_model.trim(),
+          mobile_number: fields.mobile_number.trim(),
+          issue: fields.issue.trim(),
+        };
+
+        const btn = document.getElementById("submitBtn");
+        btn.disabled = true;
+        btn.textContent = "Submitting…";
 
         try {
-          const res = await fetch(`${BASE_URL}/api/garages/${garageId}`, {
-            method: "GET",
+          const res = await fetch(`${BASE_URL}/api/service-request`, {
+            method: "POST",
             headers: NGROK_HEADERS,
+            body: JSON.stringify(payload),
           });
+          if (!res.ok) throw new Error("Server error: " + res.status);
 
-          if (!res.ok) throw new Error("HTTP " + res.status);
-
-          const data = await res.json();
-          // Adjust the key below if your API returns a different field name
-          const name =
-            data.name ||
-            data.garage_name ||
-            data.garageName ||
-            data.title ||
-            `Garage #${garageId}`;
-
-          badge.classList.remove("loading");
-          display.textContent = name;
+          document.getElementById("formSection").style.display = "none";
+          document.getElementById("successOverlay").classList.add("show");
         } catch (err) {
-          console.error("Could not fetch garage:", err);
-          badge.classList.remove("loading");
-          display.textContent = `#${garageId}`;
-          errorBar.classList.add("show");
+          console.error("Submit failed:", err);
+          alert("Something went wrong. Please try again.\n" + err.message);
+          btn.textContent = "Submit Request";
+          btn.disabled = false;
         }
-      }
-
-      loadGarageName();
-
-      // Validation helpers
-      function isEmpty(val) {
-        return !val || !val.trim();
-      }
-      function isValidMobile(val) {
-        return /^[0-9+\-\s]{7,15}$/.test(val.trim());
-      }
-
-      function setError(fieldId, show) {
-        document.getElementById(fieldId).classList.toggle("invalid", show);
-        document
-          .getElementById("err_" + fieldId)
-          .classList.toggle("show", show);
-      }
-
-      [
-        "vehicle_number",
-        "customer_name",
-        "vehicle_model",
-        "mobile_number",
-        "issue",
-      ].forEach((id) => {
-        document
-          .getElementById(id)
-          .addEventListener("input", () => setError(id, false));
       });
+    }
+  </script>
+</body>
 
-      // Form submit
-      document
-        .getElementById("serviceForm")
-        .addEventListener("submit", async function (e) {
-          e.preventDefault();
-
-          const fields = {
-            vehicle_number: document.getElementById("vehicle_number").value,
-            customer_name: document.getElementById("customer_name").value,
-            vehicle_model: document.getElementById("vehicle_model").value,
-            mobile_number: document.getElementById("mobile_number").value,
-            issue: document.getElementById("issue").value,
-          };
-
-          let valid = true;
-          if (isEmpty(fields.vehicle_number)) {
-            setError("vehicle_number", true);
-            valid = false;
-          }
-          if (isEmpty(fields.customer_name)) {
-            setError("customer_name", true);
-            valid = false;
-          }
-          if (isEmpty(fields.vehicle_model)) {
-            setError("vehicle_model", true);
-            valid = false;
-          }
-          if (
-            isEmpty(fields.mobile_number) ||
-            !isValidMobile(fields.mobile_number)
-          ) {
-            setError("mobile_number", true);
-            valid = false;
-          }
-          if (isEmpty(fields.issue)) {
-            setError("issue", true);
-            valid = false;
-          }
-
-          if (!valid) return;
-
-          const payload = {
-            garage_id: garageId,
-            vehicle_number: fields.vehicle_number.trim(),
-            customer_name: fields.customer_name.trim(),
-            vehicle_model: fields.vehicle_model.trim(),
-            mobile_number: fields.mobile_number.trim(),
-            issue: fields.issue.trim(),
-          };
-
-          const btn = document.getElementById("submitBtn");
-          btn.disabled = true;
-          btn.textContent = "Submitting…";
-
-          try {
-            const res = await fetch(`${BASE_URL}/api/service-request`, {
-              method: "POST",
-              headers: NGROK_HEADERS,
-              body: JSON.stringify(payload),
-            });
-
-            if (!res.ok) throw new Error("Server error: " + res.status);
-
-            // Show success screen
-            document.getElementById("formSection").style.display = "none";
-            document.getElementById("successOverlay").classList.add("show");
-          } catch (err) {
-            console.error("Submit failed:", err);
-            alert("Something went wrong. Please try again.\n" + err.message);
-            btn.textContent = "Submit Request";
-            btn.disabled = false;
-          }
-        });
-    </script>
-  </body>
 </html>
